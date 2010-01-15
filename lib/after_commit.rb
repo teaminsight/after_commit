@@ -64,7 +64,12 @@ end
 
 require 'after_commit/active_record'
 require 'after_commit/connection_adapters'
-require 'after_commit/test_bypass'
+require 'after_commit/after_savepoint'
 
 ActiveRecord::Base.send(:include, AfterCommit::ActiveRecord)
 ActiveRecord::Base.include_after_commit_extensions
+
+if defined?(RAILS_ENV) && RAILS_ENV == 'test'
+  ActiveRecord::Base.send(:include, AfterCommit::AfterSavepoint)
+  ActiveRecord::Base.include_after_savepoint_extensions
+end
