@@ -71,7 +71,7 @@ class Bar < ActiveRecord::Base
 end
 
 class UnsavableRecord < ActiveRecord::Base
-  attr_accessor :after_commit_called
+  attr_accessor :after_commit_called, :after_rollback_called
 
   set_table_name 'mock_records'
 
@@ -86,9 +86,13 @@ class UnsavableRecord < ActiveRecord::Base
   end
 
   after_commit :after_commit
-
   def after_commit
     self.after_commit_called = true
+  end
+
+  after_rollback :after_rollback
+  def after_rollback
+    self.after_rollback_called = true
   end
 end
 
@@ -124,7 +128,12 @@ class AfterCommitTest < Test::Unit::TestCase
   def test_after_commit_does_not_trigger_when_transaction_rolls_back
     record = UnsavableRecord.new
     begin; record.save; rescue; end
-  
+
+    # Ensure that commit of another transaction doesn't then trigger the
+    # after_commit hook on previously rolled back record
+    another_record = MockRecord.create!
+    another_record.save
+
     assert_equal false, record.after_commit_called
   end
 
@@ -141,6 +150,13 @@ class AfterCommitTest < Test::Unit::TestCase
     assert_equal 1, CountingRecord.counter
   end
   
+  def test_after_rollback_triggered_when_transaction_rolls_back
+    record = UnsavableRecord.new
+    begin; record.save; rescue; end
+
+    assert record.after_rollback_called
+  end
+
   def test_two_transactions_are_separate
     Bar.delete_all
     foo = Foo.create

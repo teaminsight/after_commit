@@ -51,7 +51,11 @@ module AfterCommit
             trigger_after_commit_on_update_callbacks
             trigger_after_commit_on_destroy_callbacks
           rescue
-            rollback_to_savepoint unless committed
+            unless committed
+              decrement_transaction_pointer
+              rollback_to_savepoint
+              increment_transaction_pointer
+            end
           ensure
             AfterCommit.cleanup(self)
             decrement_transaction_pointer
@@ -63,6 +67,7 @@ module AfterCommit
         # should recieve the after_commit callback, but do fire the after_rollback
         # callback for each record that failed to be committed.
         def rollback_to_savepoint_with_callback
+          increment_transaction_pointer
           begin
             trigger_before_rollback_callbacks
             rollback_to_savepoint_without_callback
@@ -70,6 +75,7 @@ module AfterCommit
           ensure
             AfterCommit.cleanup(self)
           end
+          decrement_transaction_pointer
         end
         alias_method_chain :rollback_to_savepoint, :callback
       end

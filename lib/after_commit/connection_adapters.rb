@@ -37,6 +37,16 @@ module AfterCommit
             trigger_after_commit_on_update_callbacks
             trigger_after_commit_on_destroy_callbacks
             result
+          rescue
+            if committed
+              result
+            else
+              # Need to decrement the transaction pointer before calling
+              # rollback... to ensure it is not incremented twice
+              decrement_transaction_pointer
+              rollback_db_transaction
+              increment_transaction_pointer
+            end
           ensure
             AfterCommit.cleanup(self)
             decrement_transaction_pointer
@@ -60,6 +70,7 @@ module AfterCommit
             AfterCommit.cleanup(self)
             decrement_transaction_pointer
           end
+          decrement_transaction_pointer
         end
         alias_method_chain :rollback_db_transaction, :callback
         
