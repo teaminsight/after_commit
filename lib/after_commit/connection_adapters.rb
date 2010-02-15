@@ -38,6 +38,7 @@ module AfterCommit
         # should recieve the after_commit callback, but do fire the after_rollback
         # callback for each record that failed to be committed.
         def rollback_db_transaction_with_callback
+          increment_transaction_pointer
           begin
             result = nil
             trigger_before_rollback_callbacks
@@ -46,6 +47,7 @@ module AfterCommit
             result
           ensure
             AfterCommit.cleanup(self)
+            decrement_transaction_pointer
           end
         end
         alias_method_chain :rollback_db_transaction, :callback
@@ -105,7 +107,7 @@ module AfterCommit
             end
           end
         end
-      
+            
         def trigger_after_commit_on_create_callbacks
           # Trigger the after_commit_on_create callback for each of the committed
           # records.

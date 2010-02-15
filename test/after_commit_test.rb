@@ -39,6 +39,17 @@ class MockRecord < ActiveRecord::Base
   end
 end
 
+class CountingRecord < ActiveRecord::Base
+  attr_accessor :after_commit_on_create_called
+  cattr_accessor :counter
+  @@counter=0
+  
+  after_commit_on_create :do_after_create
+  def do_after_create
+    @@counter+=1
+  end
+end
+
 class Foo < ActiveRecord::Base
   attr_reader :creating
   
@@ -115,6 +126,19 @@ class AfterCommitTest < Test::Unit::TestCase
     begin; record.save; rescue; end
   
     assert_equal false, record.after_commit_called
+  end
+
+  def test_after_commit_does_not_trigger_when_unrelated_transaction_commits
+    begin
+      CountingRecord.transaction do
+        CountingRecord.create!
+        raise "fail"
+      end
+    rescue
+    end
+    assert_equal 0, CountingRecord.counter
+    CountingRecord.create!
+    assert_equal 1, CountingRecord.counter
   end
   
   def test_two_transactions_are_separate
