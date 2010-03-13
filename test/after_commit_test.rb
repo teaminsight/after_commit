@@ -18,7 +18,7 @@ class MockRecord < ActiveRecord::Base
     self.before_commit_on_update_called = true
   end
 
-  before_commit_on_create :do_before_destroy
+  before_commit_on_destroy :do_before_destroy
   def do_before_destroy
     self.before_commit_on_destroy_called = true
   end
@@ -33,7 +33,7 @@ class MockRecord < ActiveRecord::Base
     self.after_commit_on_update_called = true
   end
 
-  after_commit_on_create :do_after_destroy
+  after_commit_on_destroy :do_after_destroy
   def do_after_destroy
     self.after_commit_on_destroy_called = true
   end
