@@ -3,10 +3,15 @@ module AfterCommit
     def self.included(base)
       base.class_eval do
         def transaction_with_callback(*args, &block)
-          @disable_rollback = false
+          # @disable_rollback is set to false at the start of the
+          # outermost call to #transaction.  After committing, it is
+          # set to true to prevent exceptions causing a spurious
+          # rollback.
+          outermost_call = @disable_rollback.nil?
+          @disable_rollback = false if outermost_call
           transaction_without_callback(*args, &block)
         ensure
-          @disable_rollback = false
+          @disable_rollback = nil if outermost_call
         end
         alias_method_chain :transaction, :callback
 

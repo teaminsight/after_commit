@@ -173,4 +173,13 @@ class AfterCommitTest < Test::Unit::TestCase
     end
     assert_raises(TestError){record.destroy}
   end
+
+  def test_transactions_in_hooks_do_not_cause_spurious_rollbacks
+    record = MockRecord.create
+    def record.do_after_destroy
+      MockRecord.transaction{}
+      raise TestError, 'catch me!'
+    end
+    assert_raises(TestError){record.destroy}
+  end
 end
