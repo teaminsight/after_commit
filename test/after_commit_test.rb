@@ -81,6 +81,27 @@ class UnsavableRecord < ActiveRecord::Base
   end
 end
 
+class TrackCountRecord < ActiveRecord::Base
+  attr_accessor :total_count
+
+  set_table_name 'mock_records'
+
+  protected
+
+  after_commit :update_counts
+  after_rollback :update_counts
+
+  def update_counts
+    all_records =
+      AfterCommit.records(connection) +
+      AfterCommit.created_records(connection) +
+      AfterCommit.updated_records(connection) +
+      AfterCommit.destroyed_records(connection)
+    all_records.uniq!
+    self.total_count = all_records.size
+  end
+end
+
 class AfterCommitTest < Test::Unit::TestCase
   def test_before_commit_on_create_is_called
     assert_equal true, MockRecord.create!.before_commit_on_create_called
@@ -123,4 +144,23 @@ class AfterCommitTest < Test::Unit::TestCase
     
     assert_equal 1, foo.creating
   end
+  
+  def test_records_with_callbacks_are_tracked
+    record = nil
+    MockRecord.transaction do
+      record = TrackCountRecord.create!
+      5.times.each { MockRecord.create! }
+    end
+    assert_equal 6, record.total_count
+  end
+  
+  def test_records_without_callbacks_are_not_tracked
+    record = nil
+    MockRecord.transaction do
+      record = TrackCountRecord.create!
+      5.times.each { Bar.create! }
+    end
+    assert_equal 1, record.total_count
+  end
+  
 end
