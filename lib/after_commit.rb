@@ -62,9 +62,11 @@ module AfterCommit
   end
 end
 
+require 'after_commit/active_support_callbacks'
 require 'after_commit/active_record'
 require 'after_commit/connection_adapters'
 require 'after_commit/test_bypass'
 
+ActiveSupport::Callbacks.send(:include, AfterCommit::ActiveSupportCallbacks)
 ActiveRecord::Base.send(:include, AfterCommit::ActiveRecord)
 ActiveRecord::Base.include_after_commit_extensions
