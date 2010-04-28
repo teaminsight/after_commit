@@ -49,3 +49,4 @@ This version (maintained by Pat Allan) includes the following patches:
 * Scoping callbacks to specific connections ("Mat Brown":http://outofti.me/)
 * before_* callbacks ("Trotter Cashion":http://trottercashion.com/)
 * Gemspec and extended tests, works as a plugin, doesn't load ActiveRecord hooks twice, doesn't add Test environment hook automatically. ("David Yip":http://github.com/yipdw)
+* Exception propagation ("George Ogata":http://github.com/oggy/)

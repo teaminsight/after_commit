@@ -18,7 +18,7 @@ class MockRecord < ActiveRecord::Base
     self.before_commit_on_update_called = true
   end
 
-  before_commit_on_create :do_before_destroy
+  before_commit_on_destroy :do_before_destroy
   def do_before_destroy
     self.before_commit_on_destroy_called = true
   end
@@ -33,7 +33,7 @@ class MockRecord < ActiveRecord::Base
     self.after_commit_on_update_called = true
   end
 
-  after_commit_on_create :do_after_destroy
+  after_commit_on_destroy :do_after_destroy
   def do_after_destroy
     self.after_commit_on_destroy_called = true
   end
@@ -162,5 +162,63 @@ class AfterCommitTest < Test::Unit::TestCase
     end
     assert_equal 1, record.total_count
   end
-  
+
+  TestError = Class.new(StandardError)
+
+  def test_exceptions_in_before_commit_on_create_are_not_swallowed
+    record = MockRecord.new
+    def record.do_before_create
+      raise TestError, 'catch me!'
+    end
+    assert_raises(TestError){record.save!}
+  end
+
+  def test_exceptions_in_after_commit_on_create_are_not_swallowed
+    record = MockRecord.new
+    def record.do_after_create
+      raise TestError, 'catch me!'
+    end
+    assert_raises(TestError){record.save!}
+  end
+
+  def test_exceptions_in_before_commit_on_update_are_not_swallowed
+    record = MockRecord.create
+    def record.do_before_update
+      raise TestError, 'catch me!'
+    end
+    assert_raises(TestError){record.update_attributes({})}
+  end
+
+  def test_exceptions_in_after_commit_on_update_are_not_swallowed
+    record = MockRecord.create
+    def record.do_after_update
+      raise TestError, 'catch me!'
+    end
+    assert_raises(TestError){record.update_attributes({})}
+  end
+
+  def test_exceptions_in_before_commit_on_destroy_are_not_swallowed
+    record = MockRecord.create
+    def record.do_before_destroy
+      raise TestError, 'catch me!'
+    end
+    assert_raises(TestError){record.destroy}
+  end
+
+  def test_exceptions_in_after_commit_on_destroy_are_not_swallowed
+    record = MockRecord.create
+    def record.do_after_destroy
+      raise TestError, 'catch me!'
+    end
+    assert_raises(TestError){record.destroy}
+  end
+
+  def test_transactions_in_hooks_do_not_cause_spurious_rollbacks
+    record = MockRecord.create
+    def record.do_after_destroy
+      MockRecord.transaction{}
+      raise TestError, 'catch me!'
+    end
+    assert_raises(TestError){record.destroy}
+  end
 end
