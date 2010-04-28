@@ -4,9 +4,12 @@ class MockRecord < ActiveRecord::Base
   attr_accessor :before_commit_on_create_called
   attr_accessor :before_commit_on_update_called
   attr_accessor :before_commit_on_destroy_called
+  attr_accessor :before_commit_called
   attr_accessor :after_commit_on_create_called
   attr_accessor :after_commit_on_update_called
   attr_accessor :after_commit_on_destroy_called
+  attr_accessor :after_commit_called
+  
 
   before_commit_on_create :do_before_create
   def do_before_create
@@ -23,6 +26,11 @@ class MockRecord < ActiveRecord::Base
     self.before_commit_on_destroy_called = true
   end
 
+  before_commit :do_before_commit
+  def do_before_commit
+    self.before_commit_called = true
+  end
+
   after_commit_on_create :do_after_create
   def do_after_create
     self.after_commit_on_create_called = true
@@ -36,6 +44,11 @@ class MockRecord < ActiveRecord::Base
   after_commit_on_destroy :do_after_destroy
   def do_after_destroy
     self.after_commit_on_destroy_called = true
+  end
+
+  after_commit :do_after_commit
+  def do_after_commit
+    self.after_commit_called = true
   end
 end
 
@@ -128,7 +141,16 @@ class AfterCommitTest < Test::Unit::TestCase
   end
   
   def test_after_commit_on_destroy_is_called
-    assert_equal true, MockRecord.create!.destroy.after_commit_on_destroy_called
+    record = MockRecord.create!
+    
+    # reset states set by create!
+    record.before_commit_called = false 
+    record.after_commit_called = false
+    record.destroy
+    
+    assert_equal true, record.after_commit_on_destroy_called
+    assert_equal false, record.after_commit_called
+    assert_equal false, record.before_commit_called
   end
   
   def test_after_commit_does_not_trigger_when_transaction_rolls_back
