@@ -49,6 +49,7 @@ module AfterCommit
         # callback for each record that failed to be committed.
         def rollback_db_transaction_with_callback
           return if @disable_rollback
+          increment_transaction_pointer
           begin
             result = nil
             trigger_before_rollback_callbacks
@@ -57,6 +58,7 @@ module AfterCommit
             result
           ensure
             AfterCommit.cleanup(self)
+            decrement_transaction_pointer
           end
         end
         alias_method_chain :rollback_db_transaction, :callback
@@ -109,7 +111,7 @@ module AfterCommit
             record.send :callback, :after_commit unless AfterCommit.destroyed_records(self).include? record
           end
         end
-      
+            
         def trigger_after_commit_on_create_callbacks
           # Trigger the after_commit_on_create callback for each of the committed
           # records.
