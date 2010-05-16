@@ -1,42 +1,27 @@
 require 'test_helper'
 
 class MockRecord < ActiveRecord::Base
-  attr_accessor :before_commit_on_create_called
-  attr_accessor :before_commit_on_update_called
-  attr_accessor :before_commit_on_destroy_called
-  attr_accessor :after_commit_on_create_called
-  attr_accessor :after_commit_on_update_called
-  attr_accessor :after_commit_on_destroy_called
-
-  before_commit_on_create :do_before_create
-  def do_before_create
-    self.before_commit_on_create_called = true
+  
+  PHASES = %w(before after)
+  ACTIONS = %w(create update destroy)
+  
+  PHASES.each do |phase|
+    ACTIONS.each do |action|
+      
+      class_eval <<-RUBY
+        
+        attr_accessor :#{phase}_commit_on_#{action}_called
+        
+        #{phase}_commit_on_#{action} :do_#{phase}_#{action}
+        def do_#{phase}_#{action}
+          self.#{phase}_commit_on_#{action}_called = true
+        end
+        
+      RUBY
+      
+    end
   end
-
-  before_commit_on_update :do_before_update
-  def do_before_update
-    self.before_commit_on_update_called = true
-  end
-
-  before_commit_on_destroy :do_before_destroy
-  def do_before_destroy
-    self.before_commit_on_destroy_called = true
-  end
-
-  after_commit_on_create :do_after_create
-  def do_after_create
-    self.after_commit_on_create_called = true
-  end
-
-  after_commit_on_update :do_after_update
-  def do_after_update
-    self.after_commit_on_update_called = true
-  end
-
-  after_commit_on_destroy :do_after_destroy
-  def do_after_destroy
-    self.after_commit_on_destroy_called = true
-  end
+  
 end
 
 class CountingRecord < ActiveRecord::Base
