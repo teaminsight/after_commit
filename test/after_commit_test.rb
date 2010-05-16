@@ -105,8 +105,13 @@ class AfterCommitTest < Test::Unit::TestCase
   
   def test_before_commit_on_update_is_called
     record = MockRecord.create!
+    record.before_commit_on_update_called = false
     record.save
     assert_equal true, record.before_commit_on_update_called
+  end
+  
+  def test_before_commit_on_update_is_not_called_for_create
+    assert_nil MockRecord.create!.before_commit_on_update_called
   end
   
   def test_before_commit_on_destroy_is_called
@@ -119,8 +124,13 @@ class AfterCommitTest < Test::Unit::TestCase
   
   def test_after_commit_on_update_is_called
     record = MockRecord.create!
+    record.after_commit_on_update_called = false
     record.save
     assert_equal true, record.after_commit_on_update_called
+  end
+  
+  def test_after_commit_on_update_is_not_called_for_create
+    assert_nil MockRecord.create!.after_commit_on_update_called
   end
   
   def test_after_commit_on_destroy_is_called
