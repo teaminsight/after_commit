@@ -34,16 +34,19 @@ module AfterCommit
         define_callbacks  :after_commit,
                           :after_commit_on_create,
                           :after_commit_on_update,
+                          :after_commit_on_save,
                           :after_commit_on_destroy,
                           :after_rollback,
                           :before_commit,
                           :before_commit_on_create,
                           :before_commit_on_update,
+                          :before_commit_on_save,
                           :before_commit_on_destroy,
                           :before_rollback
         
         after_create  :add_committed_record_on_create
         after_update  :add_committed_record_on_update
+        after_save    :add_committed_record_on_save
         after_destroy :add_committed_record_on_destroy
         
         def add_committed_record
@@ -63,6 +66,12 @@ module AfterCommit
           add_committed_record
           if have_callback? :before_commit_on_update, :after_commit_on_update
             AfterCommit.record_updated(self.class.connection, self)
+          end
+        end
+        
+        def add_committed_record_on_save
+          if have_callback? :before_commit_on_save, :after_commit_on_save
+            AfterCommit.record_saved(self.class.connection, self)
           end
         end
         

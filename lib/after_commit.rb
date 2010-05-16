@@ -14,6 +14,11 @@ module AfterCommit
     add_to_collection  :committed_records_on_update, connection, record
   end
 
+  def self.record_saved(connection, record)
+    prepare_collection :committed_records_on_save, connection
+    add_to_collection  :committed_records_on_save, connection, record
+  end
+
   def self.record_destroyed(connection, record)
     prepare_collection :committed_records_on_destroy, connection
     add_to_collection  :committed_records_on_destroy, connection, record
@@ -31,6 +36,10 @@ module AfterCommit
     collection :committed_records_on_update, connection
   end
 
+  def self.saved_records(connection)
+    collection :committed_records_on_save, connection
+  end
+
   def self.destroyed_records(connection)
     collection :committed_records_on_destroy, connection
   end
@@ -40,6 +49,7 @@ module AfterCommit
       :committed_records,
       :committed_records_on_create,
       :committed_records_on_update,
+      :committed_records_on_save,
       :committed_records_on_destroy
     ].each do |collection|
       Thread.current[collection]                        ||= {}

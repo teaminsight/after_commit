@@ -3,7 +3,7 @@ require 'test_helper'
 class MockRecord < ActiveRecord::Base
   
   PHASES = %w(before after)
-  ACTIONS = %w(create update destroy)
+  ACTIONS = %w(create update save destroy)
   
   PHASES.each do |phase|
     ACTIONS.each do |action|
@@ -92,6 +92,7 @@ class TrackCountRecord < ActiveRecord::Base
       AfterCommit.records(connection) +
       AfterCommit.created_records(connection) +
       AfterCommit.updated_records(connection) +
+      AfterCommit.saved_records(connection) +
       AfterCommit.destroyed_records(connection)
     all_records.uniq!
     self.total_count = all_records.size
@@ -114,6 +115,17 @@ class AfterCommitTest < Test::Unit::TestCase
     assert_nil MockRecord.create!.before_commit_on_update_called
   end
   
+  def test_before_commit_on_save_is_called_for_create
+    assert_equal true, MockRecord.create!.before_commit_on_save_called
+  end
+  
+  def test_before_commit_on_save_is_called_for_update
+    record = MockRecord.create!
+    record.before_commit_on_save_called = false
+    record.save
+    assert_equal true, record.before_commit_on_save_called
+  end
+  
   def test_before_commit_on_destroy_is_called
     assert_equal true, MockRecord.create!.destroy.before_commit_on_destroy_called
   end
@@ -131,6 +143,17 @@ class AfterCommitTest < Test::Unit::TestCase
   
   def test_after_commit_on_update_is_not_called_for_create
     assert_nil MockRecord.create!.after_commit_on_update_called
+  end
+  
+  def test_after_commit_on_save_is_called_for_create
+    assert_equal true, MockRecord.create!.after_commit_on_save_called
+  end
+  
+  def test_after_commit_on_save_is_called_for_update
+    record = MockRecord.create!
+    record.after_commit_on_save_called = false
+    record.save
+    assert_equal true, record.after_commit_on_save_called
   end
   
   def test_after_commit_on_destroy_is_called

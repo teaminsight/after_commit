@@ -7,8 +7,8 @@
 module AfterCommit::TestBypass
   def self.included(klass)
     klass.class_eval do
-      [:add_committed_record_on_create, :add_committed_record_on_update, :add_committed_record_on_destroy].each do |method|
-        remove_method(method)
+      %w(create update save destroy).each do |action|
+        remove_method "add_committed_record_on_#{action}"
       end
     end
   end
@@ -21,6 +21,10 @@ module AfterCommit::TestBypass
   def add_committed_record_on_update
     callback :after_commit
     callback :after_commit_on_update
+  end
+
+  def add_committed_record_on_save
+    callback :after_commit_on_save
   end
 
   def add_committed_record_on_destroy
