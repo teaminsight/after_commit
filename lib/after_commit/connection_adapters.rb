@@ -75,7 +75,7 @@ module AfterCommit
         
         def trigger_before_commit_callbacks
           AfterCommit.records(self).each do |record|
-            record.send :callback, :before_commit unless AfterCommit.destroyed_records(self).include? record
+            record.send :callback, :before_commit
           end 
         end
 
@@ -106,9 +106,8 @@ module AfterCommit
         def trigger_after_commit_callbacks
           # Trigger the after_commit callback for each of the committed
           # records.
-          
           AfterCommit.records(self).each do |record|
-            record.send :callback, :after_commit unless AfterCommit.destroyed_records(self).include? record
+            record.send :callback, :after_commit
           end
         end
             
