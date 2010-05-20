@@ -2,25 +2,20 @@ $LOAD_PATH.unshift(File.dirname(__FILE__) + '/../lib')
 require 'test/unit'
 require 'rubygems'
 require 'active_record'
-
-begin
-  require 'sqlite3'
-rescue LoadError
-  gem 'sqlite3-ruby'
-  retry
-end
+require 'sqlite3'
 
 ActiveRecord::Base.establish_connection({"adapter" => "sqlite3", "database" => 'test.sqlite3'})
+tables = %w( mock_records counting_records foos bars )
+
 begin
-  ActiveRecord::Base.connection.execute("drop table mock_records");
-  ActiveRecord::Base.connection.execute("drop table counting_records");
-  ActiveRecord::Base.connection.execute("drop table foos");
-  ActiveRecord::Base.connection.execute("drop table bars");
+  tables.each do |table|
+    ActiveRecord::Base.connection.execute("drop table #{table}");
+  end
 rescue
 end
-ActiveRecord::Base.connection.execute("create table mock_records(id int)");
-ActiveRecord::Base.connection.execute("create table counting_records(id int)");
-ActiveRecord::Base.connection.execute("create table foos(id int)");
-ActiveRecord::Base.connection.execute("create table bars(id int)");
+
+tables.each do |table|
+  ActiveRecord::Base.connection.execute("create table #{table}(id int, name string)");
+end
 
 require 'after_commit'

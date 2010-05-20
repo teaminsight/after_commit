@@ -31,5 +31,5 @@ Jeweler::Tasks.new do |gem|
   ]
   
   gem.add_dependency 'activerecord'
-  gem.add_development_dependency 'shoulda'
+  gem.add_development_dependency 'sqlite3-ruby'
 end
