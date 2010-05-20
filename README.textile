@@ -59,3 +59,4 @@ This version (maintained by Pat Allan) includes the following patches:
 * Exception propagation ("George Ogata":http://github.com/oggy/)
 * Keeping callbacks focused on the correct transactions ("Benjamin Stein":http://benjaminste.in/)
 * Using savepoints for test helper ("Lars Klevan":http://www.linkedin.com/in/larsklevan and "Joel Chippindale":http://blog.monkeysthumb.org/)
+* Only tracking objects from classes that have appropriate callbacks; Adding @after/before_commit_on_save@ to cover creates and updates but not destroys ("Jason Weathered":http://jasoncodes.com/)
