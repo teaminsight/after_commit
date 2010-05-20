@@ -2,6 +2,8 @@ h1. after_commit
 
 An ActiveRecord/Rails library to add @before_commit@, @after_commit@, @before_rollback@ and @after_rollback@ callbacks. These callbacks are focused on the transactions, instead of specific model actions. This is beneficial in situations where you are doing asynchronous processing and need committed objects.
 
+*Please note*: Rails 3 (and thus, ActiveRecord 3) "provides commit callbacks natively":http://github.com/rails/rails/commit/da840d13da865331297d5287391231b1ed39721b, so this library will remain just for versions 1.2.x to 2.x of ActiveRecord.
+
 h2. Installation
 
 <pre><code>gem install after_commit</code></pre>
