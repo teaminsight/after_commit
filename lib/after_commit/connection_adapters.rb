@@ -27,6 +27,7 @@ module AfterCommit
             trigger_before_commit_callbacks
             trigger_before_commit_on_create_callbacks
             trigger_before_commit_on_update_callbacks
+            trigger_before_commit_on_save_callbacks
             trigger_before_commit_on_destroy_callbacks
 
             result = commit_db_transaction_without_callback
@@ -35,6 +36,7 @@ module AfterCommit
             trigger_after_commit_callbacks
             trigger_after_commit_on_create_callbacks
             trigger_after_commit_on_update_callbacks
+            trigger_after_commit_on_save_callbacks
             trigger_after_commit_on_destroy_callbacks
             result
           rescue
@@ -102,6 +104,12 @@ module AfterCommit
           end 
         end
       
+        def trigger_before_commit_on_save_callbacks
+          AfterCommit.saved_records(self).each do |record|
+            record.send :callback, :before_commit_on_save
+          end
+        end
+        
         def trigger_before_commit_on_destroy_callbacks
           AfterCommit.destroyed_records(self).each do |record|
             record.send :callback, :before_commit_on_destroy
@@ -138,6 +146,14 @@ module AfterCommit
           end
         end
       
+        def trigger_after_commit_on_save_callbacks
+          # Trigger the after_commit_on_save callback for each of the committed
+          # records.
+          AfterCommit.saved_records(self).each do |record|
+            record.send :callback, :after_commit_on_save
+          end
+        end
+        
         def trigger_after_commit_on_destroy_callbacks
           # Trigger the after_commit_on_destroy callback for each of the committed
           # records.

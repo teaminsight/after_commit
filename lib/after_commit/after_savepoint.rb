@@ -40,6 +40,7 @@ module AfterCommit
           begin
             trigger_before_commit_callbacks
             trigger_before_commit_on_create_callbacks
+            trigger_before_commit_on_save_callbacks
             trigger_before_commit_on_update_callbacks
             trigger_before_commit_on_destroy_callbacks
             
@@ -48,6 +49,7 @@ module AfterCommit
             
             trigger_after_commit_callbacks
             trigger_after_commit_on_create_callbacks
+            trigger_after_commit_on_save_callbacks
             trigger_after_commit_on_update_callbacks
             trigger_after_commit_on_destroy_callbacks
           rescue

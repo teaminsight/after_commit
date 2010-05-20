@@ -1,42 +1,27 @@
 require 'test_helper'
 
 class MockRecord < ActiveRecord::Base
-  attr_accessor :before_commit_on_create_called
-  attr_accessor :before_commit_on_update_called
-  attr_accessor :before_commit_on_destroy_called
-  attr_accessor :after_commit_on_create_called
-  attr_accessor :after_commit_on_update_called
-  attr_accessor :after_commit_on_destroy_called
-
-  before_commit_on_create :do_before_create
-  def do_before_create
-    self.before_commit_on_create_called = true
+  
+  PHASES = %w(before after)
+  ACTIONS = %w(create update save destroy)
+  
+  PHASES.each do |phase|
+    ACTIONS.each do |action|
+      
+      class_eval <<-RUBY
+        
+        attr_accessor :#{phase}_commit_on_#{action}_called
+        
+        #{phase}_commit_on_#{action} :do_#{phase}_#{action}
+        def do_#{phase}_#{action}
+          self.#{phase}_commit_on_#{action}_called = true
+        end
+        
+      RUBY
+      
+    end
   end
-
-  before_commit_on_update :do_before_update
-  def do_before_update
-    self.before_commit_on_update_called = true
-  end
-
-  before_commit_on_destroy :do_before_destroy
-  def do_before_destroy
-    self.before_commit_on_destroy_called = true
-  end
-
-  after_commit_on_create :do_after_create
-  def do_after_create
-    self.after_commit_on_create_called = true
-  end
-
-  after_commit_on_update :do_after_update
-  def do_after_update
-    self.after_commit_on_update_called = true
-  end
-
-  after_commit_on_destroy :do_after_destroy
-  def do_after_destroy
-    self.after_commit_on_destroy_called = true
-  end
+  
 end
 
 class CountingRecord < ActiveRecord::Base
@@ -96,6 +81,28 @@ class UnsavableRecord < ActiveRecord::Base
   end
 end
 
+class TrackCountRecord < ActiveRecord::Base
+  attr_accessor :total_count
+
+  set_table_name 'mock_records'
+
+  protected
+
+  after_commit :update_counts
+  after_rollback :update_counts
+
+  def update_counts
+    all_records =
+      AfterCommit.records(connection) +
+      AfterCommit.created_records(connection) +
+      AfterCommit.updated_records(connection) +
+      AfterCommit.saved_records(connection) +
+      AfterCommit.destroyed_records(connection)
+    all_records.uniq!
+    self.total_count = all_records.size
+  end
+end
+
 class AfterCommitTest < Test::Unit::TestCase
   def test_before_commit_on_create_is_called
     assert_equal true, MockRecord.create!.before_commit_on_create_called
@@ -103,8 +110,24 @@ class AfterCommitTest < Test::Unit::TestCase
   
   def test_before_commit_on_update_is_called
     record = MockRecord.create!
+    record.before_commit_on_update_called = false
     record.save
     assert_equal true, record.before_commit_on_update_called
+  end
+  
+  def test_before_commit_on_update_is_not_called_for_create
+    assert_nil MockRecord.create!.before_commit_on_update_called
+  end
+  
+  def test_before_commit_on_save_is_called_for_create
+    assert_equal true, MockRecord.create!.before_commit_on_save_called
+  end
+  
+  def test_before_commit_on_save_is_called_for_update
+    record = MockRecord.create!
+    record.before_commit_on_save_called = false
+    record.save
+    assert_equal true, record.before_commit_on_save_called
   end
   
   def test_before_commit_on_destroy_is_called
@@ -117,8 +140,24 @@ class AfterCommitTest < Test::Unit::TestCase
   
   def test_after_commit_on_update_is_called
     record = MockRecord.create!
+    record.after_commit_on_update_called = false
     record.save
     assert_equal true, record.after_commit_on_update_called
+  end
+  
+  def test_after_commit_on_update_is_not_called_for_create
+    assert_nil MockRecord.create!.after_commit_on_update_called
+  end
+  
+  def test_after_commit_on_save_is_called_for_create
+    assert_equal true, MockRecord.create!.after_commit_on_save_called
+  end
+  
+  def test_after_commit_on_save_is_called_for_update
+    record = MockRecord.create!
+    record.after_commit_on_save_called = false
+    record.save
+    assert_equal true, record.after_commit_on_save_called
   end
   
   def test_after_commit_on_destroy_is_called
@@ -162,6 +201,24 @@ class AfterCommitTest < Test::Unit::TestCase
     foo = Foo.create
     
     assert_equal 1, foo.creating
+  end
+  
+  def test_records_with_callbacks_are_tracked
+    record = nil
+    MockRecord.transaction do
+      record = TrackCountRecord.create!
+      5.times.each { MockRecord.create! }
+    end
+    assert_equal 6, record.total_count
+  end
+  
+  def test_records_without_callbacks_are_not_tracked
+    record = nil
+    MockRecord.transaction do
+      record = TrackCountRecord.create!
+      5.times.each { Bar.create! }
+    end
+    assert_equal 1, record.total_count
   end
 
   TestError = Class.new(StandardError)
