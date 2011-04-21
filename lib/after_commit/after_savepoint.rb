@@ -52,7 +52,7 @@ module AfterCommit
             trigger_after_commit_on_save_callbacks
             trigger_after_commit_on_update_callbacks
             trigger_after_commit_on_destroy_callbacks
-          rescue
+          rescue Exception => e
             unless committed
               decrement_transaction_pointer
               rollback_to_savepoint
