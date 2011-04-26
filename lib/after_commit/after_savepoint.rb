@@ -34,9 +34,19 @@ module AfterCommit
   module TestConnectionAdapters
     def self.included(base)
       base.class_eval do
+
+        def after_callback_transaction_committed?
+          committed = (Thread.current[:after_callback_committed] || {})[unique_transaction_key]
+          return !committed.nil? && committed
+        end
+
+        def after_callback_mark_committed committed          
+          (Thread.current[:after_callback_committed] ||= {})[unique_transaction_key] = committed
+        end
+        
         def release_savepoint_with_callback
           increment_transaction_pointer
-          committed = false
+          after_callback_mark_committed false
           begin
             trigger_before_commit_callbacks
             trigger_before_commit_on_create_callbacks
@@ -45,21 +55,17 @@ module AfterCommit
             trigger_before_commit_on_destroy_callbacks
             
             release_savepoint_without_callback
-            committed = true
+            after_callback_mark_committed true
             
             trigger_after_commit_callbacks
             trigger_after_commit_on_create_callbacks
             trigger_after_commit_on_save_callbacks
             trigger_after_commit_on_update_callbacks
             trigger_after_commit_on_destroy_callbacks
-          rescue Exception => e
-            unless committed
-              decrement_transaction_pointer
-              rollback_to_savepoint
-              increment_transaction_pointer
-            end
           ensure
-            AfterCommit.cleanup(self)
+            if after_callback_transaction_committed?
+              AfterCommit.cleanup(self)              
+            end
             decrement_transaction_pointer
           end
         end 
@@ -71,9 +77,12 @@ module AfterCommit
         def rollback_to_savepoint_with_callback
           increment_transaction_pointer
           begin
-            trigger_before_rollback_callbacks
-            rollback_to_savepoint_without_callback
-            trigger_after_rollback_callbacks
+            # Only rollback if we have not already released rollback
+            unless after_callback_transaction_committed?
+              trigger_before_rollback_callbacks
+              rollback_to_savepoint_without_callback
+              trigger_after_rollback_callbacks
+            end
           ensure
             AfterCommit.cleanup(self)
           end
