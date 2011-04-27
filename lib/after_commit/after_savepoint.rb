@@ -43,6 +43,10 @@ module AfterCommit
         def after_callback_mark_committed committed          
           (Thread.current[:after_callback_committed] ||= {})[unique_transaction_key] = committed
         end
+
+        def after_callback_cleanup_committed
+          (Thread.current[:after_callback_committed] ||= {})[unique_transaction_key] = nil
+        end
         
         def release_savepoint_with_callback
           increment_transaction_pointer
@@ -56,16 +60,14 @@ module AfterCommit
             
             release_savepoint_without_callback
             after_callback_mark_committed true
-            
             trigger_after_commit_callbacks
             trigger_after_commit_on_create_callbacks
             trigger_after_commit_on_save_callbacks
             trigger_after_commit_on_update_callbacks
             trigger_after_commit_on_destroy_callbacks
+            AfterCommit.cleanup(self)
+            after_callback_cleanup_committed
           ensure
-            if after_callback_transaction_committed?
-              AfterCommit.cleanup(self)              
-            end
             decrement_transaction_pointer
           end
         end 
@@ -85,8 +87,9 @@ module AfterCommit
             end
           ensure
             AfterCommit.cleanup(self)
-          end
-          decrement_transaction_pointer
+            after_callback_cleanup_committed
+            decrement_transaction_pointer
+          end         
         end
         alias_method_chain :rollback_to_savepoint, :callback
       end
