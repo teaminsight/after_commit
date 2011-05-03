@@ -183,6 +183,7 @@ module AfterCommit
           Thread.current[:after_commit_pointer] ||= 0
           Thread.current[:after_commit_pointer] -= 1
         end
+
       end 
     end 
   end
