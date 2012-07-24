@@ -23,7 +23,7 @@ module AfterCommit
     prepare_collection :committed_records_on_destroy, connection
     add_to_collection  :committed_records_on_destroy, connection, record
   end
-  
+
   def self.records(connection)
     collection :committed_records, connection
   end
@@ -56,16 +56,18 @@ module AfterCommit
       Thread.current[collection][connection.old_transaction_key] = []
     end
   end
-  
+
   def self.prepare_collection(collection, connection)
     Thread.current[collection] ||= {}
     Thread.current[collection][connection.unique_transaction_key] ||= []
   end
-  
+
   def self.add_to_collection(collection, connection, record)
-    Thread.current[collection][connection.unique_transaction_key] << record
+    if !Thread.current[collection][connection.unique_transaction_key].include?(record)
+      Thread.current[collection][connection.unique_transaction_key] << record
+    end
   end
-  
+
   def self.collection(collection, connection)
     Thread.current[collection] ||= {}
     Thread.current[collection][connection.old_transaction_key] ||= []
